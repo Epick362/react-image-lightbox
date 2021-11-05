@@ -44,6 +44,27 @@ function _objectSpread2(target) {
   return target;
 }
 
+function _typeof(obj) {
+  '@babel/helpers - typeof';
+
+  if (typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol') {
+    _typeof = function(obj) {
+      return typeof obj;
+    };
+  } else {
+    _typeof = function(obj) {
+      return obj &&
+        typeof Symbol === 'function' &&
+        obj.constructor === Symbol &&
+        obj !== Symbol.prototype
+        ? 'symbol'
+        : typeof obj;
+    };
+  }
+
+  return _typeof(obj);
+}
+
 function _classCallCheck(instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError('Cannot call a class as a function');
@@ -988,7 +1009,7 @@ var ReactImageLightbox = /*#__PURE__*/ (function(_Component) {
             // Left arrow key moves to previous image
 
             case KEYS.LEFT_ARROW:
-              if (!this.props.prevSrc) {
+              if (!this.props.prevSrc && !this.props.prevCustomContent) {
                 return;
               }
 
@@ -999,7 +1020,7 @@ var ReactImageLightbox = /*#__PURE__*/ (function(_Component) {
             // Right arrow key moves to next image
 
             case KEYS.RIGHT_ARROW:
-              if (!this.props.nextSrc) {
+              if (!this.props.nextSrc && !this.props.nextCustomContent) {
                 return;
               }
 
@@ -1754,7 +1775,13 @@ var ReactImageLightbox = /*#__PURE__*/ (function(_Component) {
               });
             } // Load unloaded images
 
-            if (props[type] && !_this14.isImageLoaded(props[type])) {
+            if (
+              props[type] &&
+              !_this14.isImageLoaded(props[type]) &&
+              !(props[type] === 'mainSrc' && props.mainCustomContent) &&
+              !(props[type] === 'prevSrc' && props.prevCustomContent) &&
+              !(props[type] === 'nextSrc' && props.nextCustomContent)
+            ) {
               _this14.loadImage(
                 type,
                 props[type],
@@ -1860,7 +1887,10 @@ var ReactImageLightbox = /*#__PURE__*/ (function(_Component) {
             _onAfterOpen = _this$props.onAfterOpen,
             imageCrossOrigin = _this$props.imageCrossOrigin,
             reactModalProps = _this$props.reactModalProps,
-            loader = _this$props.loader;
+            loader = _this$props.loader,
+            nextCustomContent = _this$props.nextCustomContent,
+            prevCustomContent = _this$props.prevCustomContent,
+            mainCustomContent = _this$props.mainCustomContent;
           var _this$state = this.state,
             zoomLevel = _this$state.zoomLevel,
             offsetX = _this$state.offsetX,
@@ -1890,7 +1920,38 @@ var ReactImageLightbox = /*#__PURE__*/ (function(_Component) {
           var images = [];
 
           var addImage = function addImage(srcType, imageClass, transforms) {
-            // Ignore types that have no source defined for their full size image
+            if (srcType === 'mainSrc' && mainCustomContent) {
+              images.push(
+                /*#__PURE__*/ React.createElement(
+                  'div',
+                  {
+                    key: ''.concat(srcType, '-mainCustomContent'),
+                    className: ''.concat(imageClass, ' ril__image'),
+                  },
+                  mainCustomContent
+                )
+              );
+              return;
+            }
+
+            if (srcType === 'prevSrc' && prevCustomContent) {
+              images.push(
+                /*#__PURE__*/ React.createElement('div', {
+                  key: ''.concat(srcType, '-prevCustomContent'),
+                })
+              );
+              return;
+            }
+
+            if (srcType === 'nextSrc' && nextCustomContent) {
+              images.push(
+                /*#__PURE__*/ React.createElement('div', {
+                  key: ''.concat(srcType, '-nextCustomContent'),
+                })
+              );
+              return;
+            } // Ignore types that have no source defined for their full size image
+
             if (!_this17.props[srcType]) {
               return;
             }
@@ -2132,32 +2193,34 @@ var ReactImageLightbox = /*#__PURE__*/ (function(_Component) {
                 },
                 images
               ),
-              prevSrc &&
-                /*#__PURE__*/ React.createElement('button', {
-                  // Move to previous image button
-                  type: 'button',
-                  className:
-                    'ril-prev-button ril__navButtons ril__navButtonPrev',
-                  key: 'prev',
-                  'aria-label': this.props.prevLabel,
-                  title: this.props.prevLabel,
-                  onClick: !this.isAnimating()
-                    ? this.requestMovePrev
-                    : undefined, // Ignore clicks during animation
-                }),
-              nextSrc &&
-                /*#__PURE__*/ React.createElement('button', {
-                  // Move to next image button
-                  type: 'button',
-                  className:
-                    'ril-next-button ril__navButtons ril__navButtonNext',
-                  key: 'next',
-                  'aria-label': this.props.nextLabel,
-                  title: this.props.nextLabel,
-                  onClick: !this.isAnimating()
-                    ? this.requestMoveNext
-                    : undefined, // Ignore clicks during animation
-                }),
+              prevSrc || prevCustomContent
+                ? /*#__PURE__*/ React.createElement('button', {
+                    // Move to previous image button
+                    type: 'button',
+                    className:
+                      'ril-prev-button ril__navButtons ril__navButtonPrev',
+                    key: 'prev',
+                    'aria-label': this.props.prevLabel,
+                    title: this.props.prevLabel,
+                    onClick: !this.isAnimating()
+                      ? this.requestMovePrev
+                      : undefined, // Ignore clicks during animation
+                  })
+                : null,
+              nextSrc || nextCustomContent
+                ? /*#__PURE__*/ React.createElement('button', {
+                    // Move to next image button
+                    type: 'button',
+                    className:
+                      'ril-next-button ril__navButtons ril__navButtonNext',
+                    key: 'next',
+                    'aria-label': this.props.nextLabel,
+                    title: this.props.nextLabel,
+                    onClick: !this.isAnimating()
+                      ? this.requestMoveNext
+                      : undefined, // Ignore clicks during animation
+                  })
+                : null,
               /*#__PURE__*/ React.createElement(
                 'div',
                 {
@@ -2398,7 +2461,27 @@ ReactImageLightbox.propTypes = {
   // Image sources
   //-----------------------------
   // Main display image url
-  mainSrc: PropTypes.string.isRequired,
+  mainSrc: function mainSrc(props, prop, component) {
+    if (!props.mainSrc && !props.mainCustomContent) {
+      return new Error(
+        "One of 'mainSrc' or 'mainCustomContent' is required by ".concat(
+          component,
+          ' component.'
+        )
+      );
+    }
+
+    if (!props.mainCustomContent && typeof props.mainSrc !== 'string') {
+      return new Error(
+        'Invalid prop `'
+          .concat(prop, '` of type `')
+          .concat(_typeof(props.mainSrc), '` supplied to `')
+          .concat(component, '`, expected `string`.')
+      );
+    }
+
+    return null;
+  },
   // eslint-disable-line react/no-unused-prop-types
   // Previous display image url (displayed to the left)
   // If left undefined, movePrev actions will not be performed, and the button not displayed
@@ -2499,6 +2582,10 @@ ReactImageLightbox.propTypes = {
   imageLoadErrorMessage: PropTypes.node,
   // custom loader
   loader: PropTypes.node,
+  // customContent
+  mainCustomContent: PropTypes.node,
+  prevCustomContent: PropTypes.node,
+  nextCustomContent: PropTypes.node,
 };
 ReactImageLightbox.defaultProps = {
   imageTitle: null,
@@ -2516,6 +2603,7 @@ ReactImageLightbox.defaultProps = {
   imageCrossOrigin: null,
   keyRepeatKeyupBonus: 40,
   keyRepeatLimit: 180,
+  mainSrc: null,
   mainSrcThumbnail: null,
   nextLabel: 'Next image',
   nextSrc: null,
@@ -2534,6 +2622,9 @@ ReactImageLightbox.defaultProps = {
   zoomOutLabel: 'Zoom out',
   imageLoadErrorMessage: 'This image failed to load',
   loader: undefined,
+  mainCustomContent: null,
+  prevCustomContent: null,
+  nextCustomContent: null,
 };
 
 export default ReactImageLightbox;
